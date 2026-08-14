@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:7.0.4")
+        classpath("com.android.tools.build:gradle:7.4.2")
         // Pin the CloudStream Gradle plugin to a fixed JitPack commit.
         // The old master-SNAPSHOT was non-reproducible and was the source
         // of the failing configuration on GitHub Actions.
@@ -42,10 +42,10 @@ subprojects {
     }
 
     android {
-        compileSdkVersion(30)
+        compileSdkVersion(33)
         defaultConfig {
             minSdk = 21
-            targetSdk = 30
+            targetSdk = 33
         }
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_1_8
