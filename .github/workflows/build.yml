@@ -19,29 +19,43 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'
+          java-version: "11"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '7.4.2'
-          cache-disabled: true
+      - name: Remove all Gradle caches
+        run: |
+          rm -rf ~/.gradle
+          rm -rf ~/.konan
+          rm -rf ~/.kotlin
+          rm -rf "$RUNNER_TEMP/gradle-user-home"
+          mkdir -p "$RUNNER_TEMP/gradle-user-home"
+
+      - name: Install Gradle 7.4.2
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-7.4.2-bin.zip
+          unzip -q gradle-7.4.2-bin.zip -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-7.4.2/bin" >> "$GITHUB_PATH"
 
       - name: Verify project
+        env:
+          GRADLE_USER_HOME: ${{ runner.temp }}/gradle-user-home
         run: |
-          echo "=== Project ==="
-          pwd
+          gradle --version
           test -f settings.gradle.kts
           test -f build.gradle.kts
           test -f HHKungfu/build.gradle.kts
           test -f HHKungfu/src/main/kotlin/com/volong/hhkungfu/HHKungfuProvider.kt
-          echo "Project structure OK"
 
       - name: Build HHKungfu
+        env:
+          GRADLE_USER_HOME: ${{ runner.temp }}/gradle-user-home
         run: |
-          gradle HHKungfu:make --no-daemon --refresh-dependencies --stacktrace
+          gradle HHKungfu:make \
+            --no-daemon \
+            --refresh-dependencies \
+            --no-build-cache \
+            --stacktrace
 
-      - name: Show CS3 output
+      - name: Find CS3
         if: always()
         run: |
           echo "=== CS3 files ==="
