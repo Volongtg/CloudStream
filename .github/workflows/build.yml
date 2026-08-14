@@ -11,40 +11,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup Java 11
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'
+          java-version: '17'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          cache-disabled: true
+          gradle-version: '7.4.2'
 
-      - name: Check project
+      - name: Build HHKungfu
         run: |
-          pwd
-          ls -la
-          find . -maxdepth 2 -type f | sort
+          gradle HHKungfu:make --no-daemon
 
-      - name: Build plugin
+      - name: List build outputs
+        if: always()
         run: |
-          chmod +x gradlew || true
-          ./gradlew HHKungfu:make --no-daemon --stacktrace
+          echo "=== Build outputs ==="
+          find . -type f \( -name "*.jar" -o -name "*.zip" -o -name "*.aar" \) -print
 
-      - name: Find CS3
-        run: |
-          echo "=== CS3 files ==="
-          find . -type f -name "*.cs3" -print
-
-      - name: Upload HHKungfu.cs3
+      - name: Upload build output
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: HHKungfu
+          name: HHKungfu-build
           path: |
-            **/*.cs3
-          if-no-files-found: error
+            HHKungfu/build/**
+            build/**
+          if-no-files-found: warn
