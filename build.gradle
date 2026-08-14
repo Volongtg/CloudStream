@@ -6,7 +6,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.android.tools.build:gradle:7.0.4"
+        classpath "com.android.tools.build:gradle:7.4.2"
         classpath "com.github.recloudstream:gradle:master-SNAPSHOT"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10"
     }
@@ -30,11 +30,11 @@ subprojects {
     }
 
     android {
-        compileSdkVersion 30
+        compileSdkVersion 33
 
         defaultConfig {
             minSdkVersion 21
-            targetSdkVersion 30
+            targetSdkVersion 33
         }
 
         compileOptions {
@@ -62,7 +62,7 @@ subprojects {
     dependencies {
         add("apk", "com.lagradost:cloudstream3:pre-release")
         implementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.10"
-        implementation "com.github.Blatzar:NiceHttp:0.3.2"
+        implementation "com.github.Blatzar:NiceHttp:0.3.5"
         implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
         implementation "org.jsoup:jsoup:1.13.1"
         implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
