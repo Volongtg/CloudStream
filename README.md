@@ -1,25 +1,13 @@
 # HHKUNGFU CloudStream
 
-Provider HHKUNGFU cho CloudStream.
+Bản chẩn đoán/build từ project `CloudStream-main(1).zip` của người dùng.
 
-## Các file đã bổ sung
+Mục tiêu của workflow là in ra chính xác:
+- settings.gradle.kts
+- build.gradle.kts ở root
+- HHKungfu/build.gradle.kts
+- gradle.properties
 
-- `gradlew`
-- `gradlew.bat`
-- `gradle/wrapper/gradle-wrapper.properties`
+sau đó build bằng launcher `./gradlew`.
 
-Launcher tải Gradle 7.4.2 từ máy chủ Gradle khi chạy lần đầu.
-
-## Build
-
-Linux/macOS:
-```bash
-./gradlew HHKungfu:make
-```
-
-Windows:
-```bat
-gradlew.bat HHKungfu:make
-```
-
-GitHub Actions dùng cùng launcher.
+Không thay dependency CloudStream bằng phiên bản đoán mò.
