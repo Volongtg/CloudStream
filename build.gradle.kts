@@ -10,10 +10,7 @@ buildscript {
 
     dependencies {
         classpath("com.android.tools.build:gradle:7.0.4")
-        // Pin the CloudStream Gradle plugin to a fixed JitPack commit.
-        // The old master-SNAPSHOT was non-reproducible and was the source
-        // of the failing configuration on GitHub Actions.
-        classpath("com.github.recloudstream:gradle:7116299")
+        classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10")
     }
 }
