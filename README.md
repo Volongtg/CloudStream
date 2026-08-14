@@ -1,11 +1,7 @@
-# HHKUNGFU CloudStream
+# HHKUNGFU CloudStream v1.0
 
-Project rebuilt from `CloudStream-main(1).zip`.
+Root and module Gradle scripts were converted from Kotlin DSL to Groovy DSL.
+This avoids the Kotlin DSL compiler path that was throwing:
+`InvalidProtocolBufferException: Protocol message contained an invalid tag (zero)`.
 
-Build:
-```bash
-./gradlew HHKungfu:make
-```
-
-GitHub Actions uses Java 11 and the bundled launcher.
-The CloudStream Gradle dependency remains `master-SNAPSHOT`, matching the original project.
+Provider source `HHKungfuProvider.kt` is retained.
