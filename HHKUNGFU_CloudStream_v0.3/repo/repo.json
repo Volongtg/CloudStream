@@ -1,0 +1,8 @@
+{
+  "name": "HHKUNGFU",
+  "description": "Kho extension CloudStream cho HHKUNGFU",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://YOUR-GITHUB-USER.github.io/YOUR-REPO/plugins.json"
+  ]
+}
