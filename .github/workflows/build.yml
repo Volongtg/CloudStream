@@ -32,6 +32,9 @@ jobs:
           test -f HHKungfu/build.gradle
           test -f HHKungfu/src/main/kotlin/com/volong/hhkungfu/HHKungfuProvider.kt
           chmod +x gradlew
+          echo "=== Gradle wrapper configuration ==="
+          grep -n "distributionUrl" gradle/wrapper/gradle-wrapper.properties
+          chmod +x gradlew
           ./gradlew --version
 
       - name: Build HHKungfu
