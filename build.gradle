@@ -54,8 +54,13 @@ subprojects {
         }
     }
 
+    // The old CloudStream template used an "apk" configuration for the
+    // CloudStream stub. With this Groovy build, create it explicitly before
+    // declaring the dependency.
+    configurations.maybeCreate("apk")
+
     dependencies {
-        apk "com.lagradost:cloudstream3:pre-release"
+        add("apk", "com.lagradost:cloudstream3:pre-release")
         implementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.10"
         implementation "com.github.Blatzar:NiceHttp:0.3.2"
         implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"

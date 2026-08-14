@@ -1,7 +1,6 @@
-# HHKUNGFU CloudStream v1.0
+# HHKUNGFU CloudStream v1.1
 
-Root and module Gradle scripts were converted from Kotlin DSL to Groovy DSL.
-This avoids the Kotlin DSL compiler path that was throwing:
-`InvalidProtocolBufferException: Protocol message contained an invalid tag (zero)`.
+Bản này sửa lỗi build hiện tại:
+`Could not find method apk() for arguments [com.lagradost:cloudstream3:pre-release]`.
 
-Provider source `HHKungfuProvider.kt` is retained.
+Root build tạo rõ configuration `apk` trước khi thêm CloudStream stub.

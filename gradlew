@@ -12,12 +12,14 @@ if [ ! -x "$DIST/bin/gradle" ]; then
     echo "Downloading Gradle $VER..."
     if command -v curl >/dev/null 2>&1; then
       curl -fL --retry 3 "$URL" -o "$ZIP"
-    else
+    elif command -v wget >/dev/null 2>&1; then
       wget -q "$URL" -O "$ZIP"
+    else
+      echo "curl or wget is required" >&2
+      exit 1
     fi
   fi
   rm -rf "$DIST"
   unzip -q "$ZIP" -d "$BASE"
 fi
-
 exec "$DIST/bin/gradle" "$@"
