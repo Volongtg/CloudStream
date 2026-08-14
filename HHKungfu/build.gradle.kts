@@ -1,3 +1,4 @@
+// CloudStream plugin version. Increase this when the plugin changes.
 version = 1
 
 cloudstream {

@@ -1,8 +1,25 @@
-# HHKUNGFU CloudStream v0.6
+# HHKUNGFU CloudStream
 
-Provider CloudStream cho HHKUNGFU.
+Provider HHKUNGFU cho CloudStream.
 
-Build theo cấu trúc CloudStream plugin-template cũ:
-`gradle HHKungfu:make`
+## Các file đã bổ sung
 
-GitHub Actions dùng Java 11 + Gradle 7.4.2 và một Gradle user home sạch để tránh cache Kotlin DSL/Protobuf bị hỏng.
+- `gradlew`
+- `gradlew.bat`
+- `gradle/wrapper/gradle-wrapper.properties`
+
+Launcher tải Gradle 7.4.2 từ máy chủ Gradle khi chạy lần đầu.
+
+## Build
+
+Linux/macOS:
+```bash
+./gradlew HHKungfu:make
+```
+
+Windows:
+```bat
+gradlew.bat HHKungfu:make
+```
+
+GitHub Actions dùng cùng launcher.
