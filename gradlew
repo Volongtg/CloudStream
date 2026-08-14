@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 set -eu
-VER="7.4.2"
+VER="7.6.4"
 BASE="${GRADLE_USER_HOME:-$HOME/.gradle}/gradle-bootstrap"
 ZIP="$BASE/gradle-$VER-bin.zip"
 DIST="$BASE/gradle-$VER"

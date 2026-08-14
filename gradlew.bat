@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "VER=7.4.2"
+set "VER=7.6.4"
 if "%GRADLE_USER_HOME%"=="" set "GRADLE_USER_HOME=%USERPROFILE%\.gradle"
 set "BASE=%GRADLE_USER_HOME%\gradle-bootstrap"
 set "ZIP=%BASE%\gradle-%VER%-bin.zip"
