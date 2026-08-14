@@ -3,13 +3,16 @@ name: Build HHKungfu CloudStream
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 jobs:
-  diagnose-and-build:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Java 11
         uses: actions/setup-java@v4
@@ -17,34 +20,42 @@ jobs:
           distribution: temurin
           java-version: "11"
 
-      - name: Show exact Gradle files
-        run: |
-          echo "=== settings.gradle.kts ==="
-          sed -n '1,220p' settings.gradle.kts
-          echo "=== root build.gradle.kts ==="
-          sed -n '1,320p' build.gradle.kts
-          echo "=== HHKungfu/build.gradle.kts ==="
-          sed -n '1,220p' HHKungfu/build.gradle.kts
-          echo "=== Gradle properties ==="
-          sed -n '1,220p' gradle.properties || true
-
-      - name: Clean all runner Gradle/Kotlin state
+      - name: Clean Gradle state
         run: |
           rm -rf ~/.gradle ~/.kotlin ~/.konan
-          rm -rf "$RUNNER_TEMP/gradle"
-          mkdir -p "$RUNNER_TEMP/gradle"
+          mkdir -p "$RUNNER_TEMP/gradle-home"
 
-      - name: Check launcher
+      - name: Check project
+        env:
+          GRADLE_USER_HOME: ${{ runner.temp }}/gradle-home
         run: |
           chmod +x gradlew
+          test -f build.gradle.kts
+          test -f settings.gradle.kts
+          test -f HHKungfu/build.gradle.kts
+          test -f HHKungfu/src/main/kotlin/com/volong/hhkungfu/HHKungfuProvider.kt
           ./gradlew --version
 
-      - name: Build with detailed diagnostics
+      - name: Build HHKungfu
         env:
-          GRADLE_USER_HOME: ${{ runner.temp }}/gradle
+          GRADLE_USER_HOME: ${{ runner.temp }}/gradle-home
         run: |
-          ./gradlew HHKungfu:make             --no-daemon             --no-build-cache             --refresh-dependencies             --stacktrace             --info
+          ./gradlew HHKungfu:make \
+            --no-daemon \
+            --no-build-cache \
+            --refresh-dependencies \
+            --stacktrace
 
       - name: Locate CS3
         if: always()
-        run: find . -type f -name "*.cs3" -print
+        run: |
+          echo "=== CS3 files ==="
+          find . -type f -name "*.cs3" -print
+
+      - name: Upload HHKungfu.cs3
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HHKungfu
+          path: "**/*.cs3"
+          if-no-files-found: error
