@@ -21,45 +21,22 @@ jobs:
           distribution: temurin
           java-version: "11"
 
-      - name: Remove all Gradle caches
+      - name: Verify project and Gradle launcher
         run: |
-          rm -rf ~/.gradle
-          rm -rf ~/.konan
-          rm -rf ~/.kotlin
-          rm -rf "$RUNNER_TEMP/gradle-user-home"
-          mkdir -p "$RUNNER_TEMP/gradle-user-home"
-
-      - name: Install Gradle 7.4.2
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-7.4.2-bin.zip
-          unzip -q gradle-7.4.2-bin.zip -d "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/gradle-7.4.2/bin" >> "$GITHUB_PATH"
-
-      - name: Verify project
-        env:
-          GRADLE_USER_HOME: ${{ runner.temp }}/gradle-user-home
-        run: |
-          gradle --version
-          test -f settings.gradle.kts
-          test -f build.gradle.kts
+          chmod +x gradlew
+          test -f gradlew
+          test -f gradlew.bat
+          test -f gradle/wrapper/gradle-wrapper.properties
           test -f HHKungfu/build.gradle.kts
           test -f HHKungfu/src/main/kotlin/com/volong/hhkungfu/HHKungfuProvider.kt
 
       - name: Build HHKungfu
-        env:
-          GRADLE_USER_HOME: ${{ runner.temp }}/gradle-user-home
         run: |
-          gradle HHKungfu:make \
-            --no-daemon \
-            --refresh-dependencies \
-            --no-build-cache \
-            --stacktrace
+          ./gradlew HHKungfu:make --no-daemon --refresh-dependencies --no-build-cache --stacktrace
 
       - name: Find CS3
         if: always()
-        run: |
-          echo "=== CS3 files ==="
-          find . -type f -name "*.cs3" -print
+        run: find . -type f -name "*.cs3" -print
 
       - name: Upload HHKungfu.cs3
         if: success()
