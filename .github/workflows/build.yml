@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 11
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -23,19 +23,28 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '7.4.2'
+          cache-disabled: true
 
-      - name: Build HHKungfu
+      - name: Check project
         run: |
-          gradle HHKungfu:make --no-daemon --stacktrace
+          pwd
+          ls -la
+          find . -maxdepth 2 -type f | sort
+
+      - name: Build plugin
+        run: |
+          chmod +x gradlew || true
+          ./gradlew HHKungfu:make --no-daemon --stacktrace
 
       - name: Find CS3
         run: |
-          mkdir -p artifacts
-          find . -type f -name "*.cs3" -exec cp {} artifacts/ \;
+          echo "=== CS3 files ==="
+          find . -type f -name "*.cs3" -print
 
       - name: Upload HHKungfu.cs3
         uses: actions/upload-artifact@v4
         with:
           name: HHKungfu
-          path: artifacts/
+          path: |
+            **/*.cs3
+          if-no-files-found: error
