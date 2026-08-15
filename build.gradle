@@ -2,6 +2,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
         maven { url = uri("https://jitpack.io") }
     }
 
@@ -16,11 +17,12 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
         maven { url = uri("https://jitpack.io") }
     }
 }
 
-subprojects {
+project(":HHKungfu") {
     apply plugin: "com.android.library"
     apply plugin: "kotlin-android"
     apply plugin: "com.lagradost.cloudstream3.gradle"
@@ -55,17 +57,14 @@ subprojects {
         }
     }
 
-    // The old CloudStream template used an "apk" configuration for the
-    // CloudStream stub. With this Groovy build, create it explicitly before
-    // declaring the dependency.
+    // Keep the configuration expected by the CloudStream Gradle plugin.
     configurations.maybeCreate("apk")
 
     dependencies {
-        add("apk", "LOCAL_CLOUDSTREAM_STUB_REMOVED")
-        // Make CloudStream API classes available to Kotlin/Java compilation.
-        add("compileOnly", "LOCAL_CLOUDSTREAM_STUB_REMOVED")
+        // Local API stub used only for compilation. It is not put on the normal
+        // runtime classpath of the provider.
+        add("compileOnly", project(":cloudstream-stubs"))
         implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.0"
-
         implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
         implementation "org.jsoup:jsoup:1.13.1"
         implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
