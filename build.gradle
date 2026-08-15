@@ -62,6 +62,8 @@ subprojects {
 
     dependencies {
         add("apk", "com.lagradost:cloudstream3:pre-release")
+        // Make CloudStream API classes available to Kotlin/Java compilation.
+        add("compileOnly", "com.lagradost:cloudstream3:pre-release")
         implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.0"
 
         implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
