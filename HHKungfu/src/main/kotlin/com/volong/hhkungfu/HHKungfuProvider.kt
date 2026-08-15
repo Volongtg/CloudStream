@@ -158,18 +158,19 @@ class HHKungfuProvider : MainAPI() {
             val attrText = el.attributes().asList().joinToString(" ") { it.value }
             val combined = "$text $attrText"
             if (Regex("(?:1080P|2160P|4K|V1|V2)", RegexOption.IGNORE_CASE).containsMatchIn(combined)) {
-                el.attr("href").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("data-url").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("data-video").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("data-src").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("onclick").extractUrls().forEach(::submit)
+                el.attributes().get("href").takeIf { it.isNotBlank() }?.let(::submit)
+                el.attributes().get("data-url").takeIf { it.isNotBlank() }?.let(::submit)
+                el.attributes().get("data-video").takeIf { it.isNotBlank() }?.let(::submit)
+                el.attributes().get("data-src").takeIf { it.isNotBlank() }?.let(::submit)
+                el.attributes().get("onclick").extractUrls().forEach(::submit)
             }
         }
 
         // Last-resort extraction from inline scripts. This does not bypass DRM/authentication.
         document.select("script:not([src])").forEach { script ->
+            val scriptText = script.html()
             Regex("https?://[^\\s\\\"'<>]+(?:m3u8|mp4)(?:\\?[^\\s\\\"'<>]*)?", RegexOption.IGNORE_CASE)
-                .findAll(script.data()).forEach { submit(it.value) }
+                .findAll(scriptText).forEach { submit(it.value) }
         }
         return found.isNotEmpty()
     }
