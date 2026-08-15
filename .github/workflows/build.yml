@@ -34,8 +34,8 @@ jobs:
           chmod +x gradlew
           echo "=== Toolchain configuration ==="
           java -version
-          grep -n "com.android.tools.build:gradle" build.gradle.kts
-          grep -n "kotlin-gradle-plugin" build.gradle.kts
+          grep -n "com.android.tools.build:gradle" build.gradle
+          grep -n "kotlin-gradle-plugin" build.gradle
           echo "=== Gradle wrapper configuration ==="
           grep -n "distributionUrl" gradle/wrapper/gradle-wrapper.properties
           chmod +x gradlew
