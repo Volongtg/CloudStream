@@ -70,7 +70,6 @@ subprojects {
         val implementation by configurations
         apk("com.lagradost:cloudstream3:pre-release")
         implementation(kotlin("stdlib", "2.3.0"))
-        implementation("com.github.Blatzar:NiceHttp:0.3.5")
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
         implementation("org.jsoup:jsoup:1.13.1")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
