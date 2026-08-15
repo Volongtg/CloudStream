@@ -68,9 +68,8 @@ subprojects {
     dependencies {
         val apk by configurations
         val implementation by configurations
-        apk("com.lagradost:cloudstream3:pre-release")
-        // Make CloudStream API classes available to Kotlin/Java compilation.
-        compileOnly("com.lagradost:cloudstream3:pre-release")
+        // Local compile-time CloudStream API stubs. They are compileOnly and are not packaged in the plugin.
+        compileOnly(project(":cloudstream-stubs"))
         implementation(kotlin("stdlib", "2.3.0"))
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
         implementation("org.jsoup:jsoup:1.13.1")
