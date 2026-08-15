@@ -42,6 +42,7 @@ subprojects {
     }
 
     android {
+        namespace = "com.volong.hhkungfu"
         compileSdkVersion(35)
         defaultConfig {
             minSdk = 21
