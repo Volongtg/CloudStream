@@ -8,4 +8,3 @@ pluginManagement {
 }
 rootProject.name = "HHKUNGFU-CloudStream"
 include(":HHKungfu")
-include(":cloudstream-stubs")

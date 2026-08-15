@@ -1,9 +1,8 @@
-# HHKUNGFU CloudStream v1.1
+HHKungfu CloudStream build fixes
 
-Bản này sửa lỗi build hiện tại:
-`Could not find method apk() for arguments [com.lagradost:cloudstream3:pre-release]`.
-
-Root build tạo rõ configuration `apk` trước khi thêm CloudStream stub.
-
-
-Build fix: removed the unused NiceHttp dependency from the plugin module. The latest build log showed Gradle failing solely because com.github.Blatzar:NiceHttp:0.3.5 could not be resolved. The provider source does not reference NiceHttp directly.
+This revision aligns the project with the current CloudStream Gradle plugin.
+- Android Gradle Plugin: 9.1.1
+- Gradle: 9.3.1
+- Kotlin: 2.4.0
+- CloudStream Gradle plugin: recloudstream/gradle commit 32895ae
+- CloudStream API dependency uses the plugin's `cloudstream` configuration instead of the retired `apk` configuration.
