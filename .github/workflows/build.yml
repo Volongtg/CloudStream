@@ -1,9 +1,9 @@
-name: Build and publish HHKungfu CloudStream
+name: Build and publish HHKungfu
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main, master]
+    branches: [ main, master ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,109 +11,77 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v5
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Prepare Gradle
-        run: |
-          chmod +x gradlew
-          ./gradlew --version
+        run: chmod +x ./gradlew
 
-      - name: Build HHKungfu
+      - name: Set plugin version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("HHKungfu/build.gradle")
+          s = p.read_text()
+          import os, re
+          version = os.environ["GITHUB_RUN_NUMBER"]
+          s = re.sub(r'(?m)^version\s*=\s*\d+', f'version = {version}', s)
+          p.write_text(s)
+          PY
+
+      - name: Build plugin and plugin index
         env:
-          GRADLE_USER_HOME: ${{ runner.temp }}/gradle-home
-        run: |
-          mkdir -p "$GRADLE_USER_HOME"
-          ./gradlew HHKungfu:make --no-daemon --refresh-dependencies --no-build-cache --stacktrace
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: ./gradlew HHKungfu:make makePluginsJson --no-daemon
 
-      - name: Verify CS3
+      - name: Prepare repository files
         run: |
+          rm -rf publish
+          mkdir -p publish
           test -f HHKungfu/build/HHKungfu.cs3
-          ls -lh HHKungfu/build/HHKungfu.cs3
-
-      - name: Publish repository to builds branch
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -e
-          PUBLISH_DIR="$RUNNER_TEMP/cloudstream-builds"
-          rm -rf "$PUBLISH_DIR"
-
-          if git ls-remote --exit-code --heads origin builds >/dev/null 2>&1; then
-            git fetch origin builds
-            git worktree add --force "$PUBLISH_DIR" origin/builds
-          else
-            mkdir -p "$PUBLISH_DIR"
-            git clone --no-checkout "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$PUBLISH_DIR"
-            git -C "$PUBLISH_DIR" checkout --orphan builds
-            git -C "$PUBLISH_DIR" rm -rf . >/dev/null 2>&1 || true
-          fi
-
-          rm -rf "$PUBLISH_DIR"/.gitkeep "$PUBLISH_DIR"/*.cs3
-          cp HHKungfu/build/HHKungfu.cs3 "$PUBLISH_DIR/HHKungfu.cs3"
-
-          cat > "$PUBLISH_DIR/plugins.json" <<EOF
-          [
-            {
-              "url": "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/builds/HHKungfu.cs3",
-              "status": 1,
-              "version": 1,
-              "apiVersion": 1,
-              "name": "HHKUNGFU",
-              "internalName": "HHKungfu",
-              "authors": ["Vo Long"],
-              "description": "Provider CloudStream cho HHKUNGFU",
-              "repositoryUrl": "https://github.com/${GITHUB_REPOSITORY}",
-              "tvTypes": ["Anime", "AnimeMovie", "TvSeries", "Movie"],
-              "language": "vi",
-              "iconUrl": "https://hhkungfu.ee/favicon.ico",
-              "isAdult": false
-            }
-          ]
-          EOF
-
-          cat > "$PUBLISH_DIR/repo.json" <<EOF
+          test -f build/plugins.json
+          cp HHKungfu/build/HHKungfu.cs3 publish/HHKungfu.cs3
+          cp build/plugins.json publish/plugins.json
+          cat > publish/repo.json <<'JSON'
           {
             "name": "HHKUNGFU",
             "description": "Kho extension CloudStream cho HHKUNGFU",
             "manifestVersion": 1,
             "pluginLists": [
-              "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/builds/plugins.json"
+              "https://raw.githubusercontent.com/Volongtg/CloudStream/builds/plugins.json"
             ]
           }
-          EOF
+          JSON
+          echo "--- publish ---"
+          ls -lh publish
+          echo "--- plugins.json ---"
+          cat publish/plugins.json
 
-          cat > "$PUBLISH_DIR/README.md" <<EOF
-          # HHKUNGFU CloudStream Repository
-
-          Thêm URL này vào CloudStream Android:
-
-          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/builds/repo.json
-          EOF
-
-          git -C "$PUBLISH_DIR" config user.name "github-actions[bot]"
-          git -C "$PUBLISH_DIR" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C "$PUBLISH_DIR" add HHKungfu.cs3 plugins.json repo.json README.md
-          if git -C "$PUBLISH_DIR" diff --cached --quiet; then
-            echo "No changes to publish."
-          else
-            git -C "$PUBLISH_DIR" commit -m "Publish HHKungfu extension"
-            git -C "$PUBLISH_DIR" push origin HEAD:builds
-          fi
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: HHKungfu
-          path: HHKungfu/build/HHKungfu.cs3
-          if-no-files-found: error
+      - name: Publish builds branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin builds || true
+          git checkout -B builds
+          git rm -rf . || true
+          cp -R publish/. .
+          git add HHKungfu.cs3 plugins.json repo.json
+          git commit -m "Publish HHKungfu build ${GITHUB_RUN_NUMBER}" || true
+          git push origin builds --force
