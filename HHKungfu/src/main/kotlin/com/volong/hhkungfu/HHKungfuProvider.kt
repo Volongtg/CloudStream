@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -208,7 +210,7 @@ class HHKungfuProvider : MainAPI() {
 
     private fun isDirectVideo(url: String): Boolean = url.contains(Regex("\\.(m3u8|mp4|mkv|webm)(?:\\?|$)", RegexOption.IGNORE_CASE))
 
-    private fun emitVideo(url: String, referer: String, callback: (ExtractorLink) -> Unit) {
+    private suspend fun emitVideo(url: String, referer: String, callback: (ExtractorLink) -> Unit) {
         val quality = when {
             url.contains("2160", true) || url.contains("4k", true) -> Qualities.P2160.value
             url.contains("1440", true) -> Qualities.P1440.value
@@ -217,6 +219,15 @@ class HHKungfuProvider : MainAPI() {
             url.contains("480", true) -> Qualities.P480.value
             else -> Qualities.Unknown.value
         }
-        callback(ExtractorLink(name, name, url, referer, quality, isM3u8 = url.contains(".m3u8", true)))
+        val link = newExtractorLink(
+            source = name,
+            name = name,
+            url = url,
+            type = if (url.contains(".m3u8", true)) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+        ) {
+            this.referer = referer
+            this.quality = quality
+        }
+        callback(link)
     }
 }
