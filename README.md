@@ -12,3 +12,16 @@ This repository contains the HHKUNGFU CloudStream extension.
 CloudStream repository URL:
 
 `https://raw.githubusercontent.com/Volongtg/CloudStream/builds/repo.json`
+
+## Muvio / Nuvio
+
+Đã thêm `muvio-hhkungfu/` — Stremio Addon dành cho Muvio/Nuvio Android. Xem README bên trong thư mục này để triển khai.
+
+## v9 – StreamFree extractor fix
+
+- Giữ nguyên `mainPage` và URL normalization của bản trước.
+- Thêm `StreamFreeExtractor` và đăng ký extractor trong plugin.
+- Khi HHKUNGFU trả iframe `streamfree.vip/embed/...`, CloudStream sẽ chuyển URL đó sang extractor riêng thay vì phụ thuộc extractor có sẵn.
+- Chỉ trả kết quả `loadLinks()` khi extractor thực sự phát hiện được link video.
+
+Lưu ý: việc build APK/plugin trong môi trường hiện tại không thực hiện được vì Gradle cần tải dependency từ Internet; mã nguồn đã được đóng gói trong ZIP.

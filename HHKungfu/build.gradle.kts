@@ -1,5 +1,5 @@
 // CloudStream plugin version. Increase this when the plugin changes.
-version = 7
+version = 9
 
 cloudstream {
     description = "Provider CloudStream cho HHKUNGFU"

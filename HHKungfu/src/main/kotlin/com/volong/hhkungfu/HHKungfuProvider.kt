@@ -21,6 +21,7 @@ import java.net.URL
 class HHKungfuPlugin : Plugin() {
     override fun load(context: Context) {
         registerMainAPI(HHKungfuProvider())
+        registerExtractorAPI(StreamFreeExtractor())
     }
 }
 
@@ -139,13 +140,23 @@ class HHKungfuProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = getDocument(data, data)
-        val found = HashSet<String>()
+        val attempted = HashSet<String>()
+        var emitted = false
 
         suspend fun submit(raw: String, referer: String = data) {
             val url = normalizeUrl(raw.trim().trim('"', '\''), data) ?: return
-            if (!found.add(url)) return
-            if (isDirectVideo(url)) emitVideo(url, referer, callback)
-            else try { loadExtractor(url, normalizeUrl(referer, data) ?: data, subtitleCallback, callback) } catch (_: Throwable) { }
+            if (!attempted.add(url)) return
+            if (isDirectVideo(url)) {
+                emitVideo(url, referer, callback)
+                emitted = true
+            } else {
+                try {
+                    loadExtractor(url, normalizeUrl(referer, data) ?: data, subtitleCallback) { link ->
+                        emitted = true
+                        callback(link)
+                    }
+                } catch (_: Throwable) { }
+            }
         }
 
         // Native video/source tags.
@@ -183,7 +194,7 @@ class HHKungfuProvider : MainAPI() {
             Regex("https?://[^\\s\\\"'<>]+(?:m3u8|mp4)(?:\\?[^\\s\\\"'<>]*)?", RegexOption.IGNORE_CASE)
                 .findAll(scriptText).forEach { submit(it.value) }
         }
-        return found.isNotEmpty()
+        return emitted
     }
 
     private fun getDocument(url: String, referer: String = mainUrl): Document {
