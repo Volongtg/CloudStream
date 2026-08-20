@@ -138,7 +138,7 @@ class HHKungfuProvider : MainAPI() {
         val document = getDocument(data, data)
         val found = HashSet<String>()
 
-        fun submit(raw: String, referer: String = data) {
+        suspend fun submit(raw: String, referer: String = data) {
             val url = fixUrlNull(raw.trim().trim('"', '\'')) ?: return
             if (!found.add(url)) return
             if (isDirectVideo(url)) emitVideo(url, referer, callback)
@@ -146,10 +146,12 @@ class HHKungfuProvider : MainAPI() {
         }
 
         // Native video/source tags.
-        document.select("video[src], video source[src], source[src]").forEach { it: Element -> submit(it.attr("src")) }
+        for (it in document.select("video[src], video source[src], source[src]")) {
+            submit(it.attr("src"))
+        }
 
         // Iframes and common data attributes used by embedded players.
-        document.select("iframe[src], [data-video], [data-src], [data-url], [data-embed]").forEach { node: Element ->
+        for (node in document.select("iframe[src], [data-video], [data-src], [data-url], [data-embed]")) {
             val raw = node.attr("src").ifBlank {
                 node.attr("data-video").ifBlank {
                     node.attr("data-src").ifBlank { node.attr("data-url").ifBlank { node.attr("data-embed") } }
@@ -159,16 +161,16 @@ class HHKungfuProvider : MainAPI() {
         }
 
         // Server buttons: HHKUNGFU currently exposes 1080P/4K V1/V2 choices.
-        document.select("a[href], button, [onclick]").forEach { el: Element ->
+        for (el in document.select("a[href], button, [onclick]")) {
             val text = el.text()
             val attrText = el.attributes().asList().joinToString(" ") { attr -> attr.value }
             val combined = "$text $attrText"
             if (Regex("(?:1080P|2160P|4K|V1|V2)", RegexOption.IGNORE_CASE).containsMatchIn(combined)) {
-                el.attr("href").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("data-url").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("data-video").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("data-src").takeIf { it.isNotBlank() }?.let(::submit)
-                el.attr("onclick").extractUrls().forEach(::submit)
+                el.attr("href").takeIf { it.isNotBlank() }?.let { submit(it) }
+                el.attr("data-url").takeIf { it.isNotBlank() }?.let { submit(it) }
+                el.attr("data-video").takeIf { it.isNotBlank() }?.let { submit(it) }
+                el.attr("data-src").takeIf { it.isNotBlank() }?.let { submit(it) }
+                for (url in el.attr("onclick").extractUrls()) submit(url)
             }
         }
 
