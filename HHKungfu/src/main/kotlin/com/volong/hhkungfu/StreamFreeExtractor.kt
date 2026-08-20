@@ -2,22 +2,23 @@ package com.volong.hhkungfu
 
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import org.jsoup.nodes.Entities
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
+import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 
 /**
- * HHKUNGFU currently sends its episode player through StreamFree.
+ * Extractor for the StreamFree embed used by HHKUNGFU.
  *
- * The important part here is that CloudStream gets the StreamFree embed URL
- * directly and requests it without a browser/devtools environment. The
- * browser page can show StreamFree's anti-devtools warning, while a normal
- * HTTP request can still expose the player configuration.
+ * This version deliberately uses the same plain HTTP/Jsoup approach as the
+ * provider instead of CloudStream's `app.get()`, so it does not depend on a
+ * Requests type that may be absent from the plugin's compile classpath.
  */
 class StreamFreeExtractor : ExtractorApi() {
     override val name = "StreamFree"
@@ -30,64 +31,62 @@ class StreamFreeExtractor : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val requestReferer = referer?.takeIf { it.startsWith("http", true) } ?: mainUrl
-        val response = runCatching {
-            app.get(
-                url,
-                referer = requestReferer,
-                headers = mapOf(
-                    "User-Agent" to USER_AGENT,
-                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    "Accept-Language" to "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7"
-                )
-            )
-        }.getOrNull() ?: return
+        val pageUrl = resolveUrl(url, mainUrl) ?: return
+        val pageReferer = resolveUrl(referer ?: mainUrl, mainUrl) ?: mainUrl
 
-        val html = Entities.unescape(response.text)
+        val html = fetchHtml(pageUrl, pageReferer) ?: return
+        val document = Jsoup.parse(html, pageUrl)
         val candidates = LinkedHashSet<String>()
 
-        // Direct URLs exposed by normal player/source configuration.
-        val directRegex = Regex(
-            "https?://[^\\s\\\"'<>]+\\.(?:m3u8|mp4)(?:\\?[^\\s\\\"'<>]*)?",
-            RegexOption.IGNORE_CASE
-        )
-        directRegex.findAll(html).forEach { candidates.add(cleanUrl(it.value)) }
-
-        // Common JSON/JWPlayer/source fields, including escaped URLs.
-        val fieldRegex = Regex(
-            "(?:file|src|source|url|hls|m3u8)\\s*[:=]\\s*[\\\"']([^\\\"']+)\\\"?",
-            RegexOption.IGNORE_CASE
-        )
-        fieldRegex.findAll(html).forEach { match ->
-            val value = cleanUrl(match.groupValues[1])
-            if (value.contains("m3u8", true) || value.contains(".mp4", true)) {
-                candidates.add(value)
+        fun addCandidate(raw: String) {
+            val resolved = resolveUrl(cleanUrl(raw), pageUrl) ?: return
+            if (resolved.contains(".m3u8", true) || resolved.contains(".mp4", true)) {
+                candidates.add(resolved)
             }
         }
 
-        // Some pages store the source in HTML attributes rather than scripts.
-        response.document.select("video[src], video source[src], source[src]").forEach { element ->
-            val value = cleanUrl(element.attr("src"))
-            if (value.isNotBlank()) candidates.add(value)
+        // Direct URLs in HTML/inline JavaScript.
+        Regex(
+            """https?://[^\s"'<>\\]+?\.(?:m3u8|mp4)(?:\?[^\s"'<>\\]*)?""",
+            RegexOption.IGNORE_CASE
+        ).findAll(html).forEach { addCandidate(it.value) }
+
+        // Escaped JSON/JWPlayer/source fields.
+        Regex(
+            """(?:file|src|source|url|hls|m3u8)\s*[:=]\s*["']([^"']+)["']""",
+            RegexOption.IGNORE_CASE
+        ).findAll(html).forEach { addCandidate(it.groupValues[1]) }
+
+        // HTML media/source elements.
+        document.select("video[src], video source[src], source[src]").forEach { element: Element ->
+            addCandidate(element.attr("src"))
         }
 
-        // If the source is relative, resolve it against the StreamFree page.
-        val resolved = candidates.mapNotNull { resolveUrl(it, url) }.distinct()
-        for (streamUrl in resolved) {
+        // Common player configuration attributes.
+        document.select("[data-src], [data-url], [data-video], [data-file], [data-source]").forEach { element: Element ->
+            listOf("data-src", "data-url", "data-video", "data-file", "data-source")
+                .forEach { attr ->
+                    val value = element.attr(attr)
+                    if (value.isNotBlank()) addCandidate(value)
+                }
+        }
+
+        for (streamUrl in candidates) {
             val quality = qualityFromUrl(streamUrl)
             val type = if (streamUrl.contains(".m3u8", true)) {
                 ExtractorLinkType.M3U8
             } else {
                 ExtractorLinkType.VIDEO
             }
+
             callback(
                 newExtractorLink(
                     source = name,
-                    name = "StreamFree ${if (quality != Qualities.Unknown.value) quality.toString() + "p" else "Stream"}",
-                    url = streamUrl,
+                    name = "StreamFree ${if (quality != Qualities.Unknown.value) "${quality}p" else "Stream"}",
+                    url = URL(streamUrl),
                     type = type
                 ) {
-                    this.referer = url
+                    this.referer = pageUrl
                     this.quality = quality
                     this.headers = mapOf("User-Agent" to USER_AGENT)
                 }
@@ -95,21 +94,58 @@ class StreamFreeExtractor : ExtractorApi() {
         }
     }
 
+    private fun fetchHtml(url: String, referer: String): String? {
+        return runCatching {
+            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 15000
+                readTimeout = 20000
+                instanceFollowRedirects = true
+                setRequestProperty("User-Agent", USER_AGENT)
+                setRequestProperty(
+                    "Accept",
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+                )
+                setRequestProperty(
+                    "Accept-Language",
+                    "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7"
+                )
+                setRequestProperty("Referer", referer)
+            }
+
+            try {
+                connection.connect()
+                connection.inputStream.use { input ->
+                    input.readBytes().toString(Charsets.UTF_8)
+                }
+            } finally {
+                connection.disconnect()
+            }
+        }.getOrNull()
+    }
+
     private fun cleanUrl(value: String): String = value
         .trim()
         .trim('"', '\'', '`')
         .replace("\\/", "/")
+        .replace("\\u0026", "&")
         .replace("&amp;", "&")
 
     private fun resolveUrl(value: String, base: String): String? {
         if (value.isBlank()) return null
+        val cleaned = cleanUrl(value)
+
+        if (cleaned.startsWith("javascript:", true) ||
+            cleaned.startsWith("data:", true) ||
+            cleaned.startsWith("mailto:", true) ||
+            cleaned.startsWith("tel:", true)
+        ) return null
+
         return runCatching {
-            when {
-                value.startsWith("http://", true) || value.startsWith("https://", true) -> value
-                value.startsWith("//") -> URL(URL(base).protocol, value.removePrefix("//")).toExternalForm()
-                else -> URL(URL(base), value).toExternalForm()
-            }
-        }.getOrNull()
+            URI(base).resolve(cleaned).toString()
+        }.getOrNull()?.takeIf {
+            it.startsWith("http://", true) || it.startsWith("https://", true)
+        }
     }
 
     private fun qualityFromUrl(url: String): Int = when {
