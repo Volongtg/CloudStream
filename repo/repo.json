@@ -3,6 +3,6 @@
   "description": "Kho extension CloudStream cho HHKUNGFU",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/YOUR-GITHUB-USER/YOUR-REPO/builds/plugins.json"
+    "https://raw.githubusercontent.com/Volongtg/CloudStream/builds/plugins.json"
   ]
 }

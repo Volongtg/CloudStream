@@ -14,6 +14,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.HttpURLConnection
 import java.net.URLEncoder
+import java.net.URI
 import java.net.URL
 
 @CloudstreamPlugin
@@ -141,10 +142,10 @@ class HHKungfuProvider : MainAPI() {
         val found = HashSet<String>()
 
         suspend fun submit(raw: String, referer: String = data) {
-            val url = fixUrlNull(raw.trim().trim('"', '\'')) ?: return
+            val url = normalizeUrl(raw.trim().trim('"', '\''), data) ?: return
             if (!found.add(url)) return
             if (isDirectVideo(url)) emitVideo(url, referer, callback)
-            else try { loadExtractor(url, referer, subtitleCallback, callback) } catch (_: Throwable) { }
+            else try { loadExtractor(url, normalizeUrl(referer, data) ?: data, subtitleCallback, callback) } catch (_: Throwable) { }
         }
 
         // Native video/source tags.
@@ -186,22 +187,44 @@ class HHKungfuProvider : MainAPI() {
     }
 
     private fun getDocument(url: String, referer: String = mainUrl): Document {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+        // CloudStream may pass a relative/protocol-relative URL into loadLinks().
+        // Always normalize it before java.net.URL(), otherwise Android throws
+        // MalformedURLException: no protocol.
+        val normalizedUrl = normalizeUrl(url, mainUrl)
+            ?: throw IllegalArgumentException("Invalid URL: $url")
+        val normalizedReferer = normalizeUrl(referer, mainUrl) ?: mainUrl
+        val connection = (URL(normalizedUrl).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 15000
             readTimeout = 20000
             instanceFollowRedirects = true
             setRequestProperty("User-Agent", "Mozilla/5.0 (Android) AppleWebKit/537.36 Chrome/120 Safari/537.36")
             setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-            setRequestProperty("Referer", referer)
+            setRequestProperty("Referer", normalizedReferer)
         }
         return try {
             connection.connect()
             connection.inputStream.use { input ->
-                Jsoup.parse(input, connection.contentEncoding ?: "UTF-8", url)
+                Jsoup.parse(input, connection.contentEncoding ?: "UTF-8", normalizedUrl)
             }
         } finally {
             connection.disconnect()
+        }
+    }
+
+    /**
+     * Converts absolute, protocol-relative, and relative URLs to an absolute URL.
+     * This is intentionally independent of CloudStream's fixUrlNull() because
+     * java.net.URL() throws "no protocol" when it receives a relative URL.
+     */
+    private fun normalizeUrl(raw: String, base: String): String? {
+        val value = raw.trim().trim('"', '\'')
+        if (value.isBlank()) return null
+        return try {
+            val resolved = URI(base).resolve(value).toString()
+            if (resolved.startsWith("http://", true) || resolved.startsWith("https://", true)) resolved else null
+        } catch (_: Throwable) {
+            null
         }
     }
 
