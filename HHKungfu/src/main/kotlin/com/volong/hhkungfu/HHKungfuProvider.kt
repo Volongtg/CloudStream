@@ -191,7 +191,7 @@ class HHKungfuProvider : MainAPI() {
         // Always normalize it before java.net.URL(), otherwise Android throws
         // MalformedURLException: no protocol.
         val normalizedUrl = normalizeUrl(url, mainUrl)
-            ?: throw IllegalArgumentException("Invalid URL: $url")
+            ?: return Jsoup.parse("", mainUrl)
         val normalizedReferer = normalizeUrl(referer, mainUrl) ?: mainUrl
         val connection = (URL(normalizedUrl).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -218,16 +218,42 @@ class HHKungfuProvider : MainAPI() {
      * java.net.URL() throws "no protocol" when it receives a relative URL.
      */
     private fun normalizeUrl(raw: String, base: String): String? {
-        val value = raw.trim().trim('"', '\'')
+        // Never pass a relative, javascript:, data:, or malformed value to
+        // java.net.URL(). CloudStream and some WordPress themes can return
+        // relative links, protocol-relative links, or HTML-escaped URLs.
+        var value = raw
+            .trim()
+            .trim('\"', '\'')
+            .replace("\u0000", "")
+            .replace(Regex("[\\r\\n\\t]+"), "")
+
         if (value.isBlank()) return null
+
+        // Decode common HTML entities such as &amp; in href/data attributes.
+        value = org.jsoup.nodes.Entities.unescape(value)
+
+        if (value.startsWith("javascript:", true) ||
+            value.startsWith("data:", true) ||
+            value.startsWith("mailto:", true) ||
+            value.startsWith("tel:", true)) return null
+
         return try {
-            val resolved = URI(base).resolve(value).toString()
-            if (resolved.startsWith("http://", true) || resolved.startsWith("https://", true)) resolved else null
+            val baseUrl = URL(base)
+            val absolute = when {
+                value.startsWith("http://", true) || value.startsWith("https://", true) ->
+                    URL(value)
+                value.startsWith("//") ->
+                    URL(baseUrl.protocol, value.removePrefix("//").substringBefore('/'),
+                        if (value.removePrefix("//").contains('/')) "/" + value.removePrefix("//").substringAfter('/') else "")
+                else ->
+                    URL(baseUrl, value.replace(" ", "%20"))
+            }
+            val result = absolute.toExternalForm()
+            if (result.startsWith("http://", true) || result.startsWith("https://", true)) result else null
         } catch (_: Throwable) {
             null
         }
     }
-
     private fun String.extractUrls(): List<String> = Regex("https?://[^\\s\\\"'()<>]+", RegexOption.IGNORE_CASE)
         .findAll(this).map { it.value }.toList()
 

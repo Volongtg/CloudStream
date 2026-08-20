@@ -20,3 +20,4 @@ https://raw.githubusercontent.com/Volongtg/CloudStream/builds/repo.json
 - Repository GitHub phải để **Public** để CloudStream truy cập raw files.
 - Không đưa GitHub Personal Access Token vào URL.
 - Sau bản cập nhật đầu tiên, nếu CloudStream vẫn chạy plugin cũ, gỡ HHKUNGFU cũ rồi cài lại một lần để xóa cache.
+\n\n## v6 URL fix\nThis version resolves absolute, protocol-relative, and relative URLs before opening HTTP connections and ignores javascript/data URLs. The repository URL remains: https://raw.githubusercontent.com/Volongtg/CloudStream/builds/repo.json\n
