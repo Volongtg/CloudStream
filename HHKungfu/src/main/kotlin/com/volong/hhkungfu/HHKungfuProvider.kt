@@ -32,19 +32,19 @@ class HHKungfuProvider : MainAPI() {
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.TvSeries, TvType.Movie)
 
-    private data class Page(val url: String, val name: String)
-
-    private val homePages = listOf(
-        Page(mainUrl, "Mới cập nhật"),
-        Page("$mainUrl/hoan-thanh", "Hoàn thành"),
-        Page("$mainUrl/category/tu-tien", "Tu Tiên"),
-        Page("$mainUrl/category/luyen-cap", "Luyện Cấp"),
-        Page("$mainUrl/category/trung-sinh", "Trùng Sinh"),
-        Page("$mainUrl/category/kiem-hiep", "Kiếm Hiệp"),
-        Page("$mainUrl/category/xuyen-khong", "Xuyên Không"),
-        Page("$mainUrl/category/hai-huoc", "Hài Hước"),
-        Page("$mainUrl/category/hien-dai", "Hiện Đại"),
-        Page("$mainUrl/category/ova", "OVA")
+    // CloudStream uses this list to populate the provider Home screen.
+    // Keep these URLs absolute so getMainPage() can fetch them directly.
+    override val mainPage = mainPageOf(
+        mainUrl to "Mới cập nhật",
+        "$mainUrl/hoan-thanh" to "Hoàn thành",
+        "$mainUrl/category/tu-tien" to "Tu Tiên",
+        "$mainUrl/category/luyen-cap" to "Luyện Cấp",
+        "$mainUrl/category/trung-sinh" to "Trùng Sinh",
+        "$mainUrl/category/kiem-hiep" to "Kiếm Hiệp",
+        "$mainUrl/category/xuyen-khong" to "Xuyên Không",
+        "$mainUrl/category/hai-huoc" to "Hài Hước",
+        "$mainUrl/category/hien-dai" to "Hiện Đại",
+        "$mainUrl/category/ova" to "OVA"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

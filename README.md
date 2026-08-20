@@ -1,23 +1,14 @@
-# HHKUNGFU CloudStream
+# HHKUNGFU CloudStream Repository v7
 
-Bản repository đã sửa lỗi `no protocol` khi CloudStream truyền URL tương đối vào provider.
+This repository contains the HHKUNGFU CloudStream extension.
 
-## Link repository cho CloudStream
+## v7 fixes
+- Adds CloudStream `mainPage` entries so the provider Home screen is populated.
+- Keeps the URL normalization fixes from v6 for absolute, relative and protocol-relative URLs.
+- Rejects invalid `javascript:`, `data:`, `mailto:` and `tel:` URLs before network access.
+- Normalizes HTML entities and whitespace in URLs.
+- GitHub Actions publishes `HHKungfu.cs3`, `plugins.json`, and `repo.json` to the `builds` branch.
 
-```text
-https://raw.githubusercontent.com/Volongtg/CloudStream/builds/repo.json
-```
+CloudStream repository URL:
 
-## Cách cập nhật
-
-1. Upload/push source này lên branch `main` của `Volongtg/CloudStream`.
-2. Vào **Actions** và chờ workflow **Build and publish HHKungfu** hoàn tất.
-3. Workflow tự build `HHKungfu.cs3`, tạo `plugins.json`, `repo.json` và cập nhật branch `builds`.
-4. Trong CloudStream, giữ nguyên URL repository ở trên; không cần đổi link sau mỗi lần cập nhật.
-
-## Lưu ý
-
-- Repository GitHub phải để **Public** để CloudStream truy cập raw files.
-- Không đưa GitHub Personal Access Token vào URL.
-- Sau bản cập nhật đầu tiên, nếu CloudStream vẫn chạy plugin cũ, gỡ HHKUNGFU cũ rồi cài lại một lần để xóa cache.
-\n\n## v6 URL fix\nThis version resolves absolute, protocol-relative, and relative URLs before opening HTTP connections and ignores javascript/data URLs. The repository URL remains: https://raw.githubusercontent.com/Volongtg/CloudStream/builds/repo.json\n
+`https://raw.githubusercontent.com/Volongtg/CloudStream/builds/repo.json`
