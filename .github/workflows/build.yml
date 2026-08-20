@@ -1,9 +1,12 @@
-name: Build HHKungfu CloudStream
+name: Build and publish HHKungfu CloudStream
 
 on:
   workflow_dispatch:
   push:
     branches: [main, master]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -12,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java 17
         uses: actions/setup-java@v5
@@ -19,25 +24,8 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Clean Gradle state
+      - name: Prepare Gradle
         run: |
-          rm -rf ~/.gradle ~/.kotlin ~/.konan
-          rm -rf "$RUNNER_TEMP/gradle-home"
-          mkdir -p "$RUNNER_TEMP/gradle-home"
-
-      - name: Verify project
-        run: |
-          test -f settings.gradle
-          test -f build.gradle
-          test -f HHKungfu/build.gradle
-          test -f HHKungfu/src/main/kotlin/com/volong/hhkungfu/HHKungfuProvider.kt
-          chmod +x gradlew
-          echo "=== Toolchain configuration ==="
-          java -version
-          grep -n "com.android.tools.build:gradle" build.gradle
-          grep -n "kotlin-gradle-plugin" build.gradle
-          echo "=== Gradle wrapper configuration ==="
-          grep -n "distributionUrl" gradle/wrapper/gradle-wrapper.properties
           chmod +x gradlew
           ./gradlew --version
 
@@ -45,22 +33,87 @@ jobs:
         env:
           GRADLE_USER_HOME: ${{ runner.temp }}/gradle-home
         run: |
-          ./gradlew HHKungfu:make \
-            --no-daemon \
-            --refresh-dependencies \
-            --no-build-cache \
-            --stacktrace
+          mkdir -p "$GRADLE_USER_HOME"
+          ./gradlew HHKungfu:make --no-daemon --refresh-dependencies --no-build-cache --stacktrace
 
-      - name: Locate CS3
-        if: always()
+      - name: Verify CS3
         run: |
-          echo "=== CS3 files ==="
-          find . -type f -name "*.cs3" -print
+          test -f HHKungfu/build/HHKungfu.cs3
+          ls -lh HHKungfu/build/HHKungfu.cs3
 
-      - name: Upload HHKungfu.cs3
-        if: success()
+      - name: Publish repository to builds branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          PUBLISH_DIR="$RUNNER_TEMP/cloudstream-builds"
+          rm -rf "$PUBLISH_DIR"
+
+          if git ls-remote --exit-code --heads origin builds >/dev/null 2>&1; then
+            git fetch origin builds
+            git worktree add --force "$PUBLISH_DIR" origin/builds
+          else
+            mkdir -p "$PUBLISH_DIR"
+            git clone --no-checkout "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$PUBLISH_DIR"
+            git -C "$PUBLISH_DIR" checkout --orphan builds
+            git -C "$PUBLISH_DIR" rm -rf . >/dev/null 2>&1 || true
+          fi
+
+          rm -rf "$PUBLISH_DIR"/.gitkeep "$PUBLISH_DIR"/*.cs3
+          cp HHKungfu/build/HHKungfu.cs3 "$PUBLISH_DIR/HHKungfu.cs3"
+
+          cat > "$PUBLISH_DIR/plugins.json" <<EOF
+          [
+            {
+              "url": "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/builds/HHKungfu.cs3",
+              "status": 1,
+              "version": 1,
+              "apiVersion": 1,
+              "name": "HHKUNGFU",
+              "internalName": "HHKungfu",
+              "authors": ["Vo Long"],
+              "description": "Provider CloudStream cho HHKUNGFU",
+              "repositoryUrl": "https://github.com/${GITHUB_REPOSITORY}",
+              "tvTypes": ["Anime", "AnimeMovie", "TvSeries", "Movie"],
+              "language": "vi",
+              "iconUrl": "https://hhkungfu.ee/favicon.ico",
+              "isAdult": false
+            }
+          ]
+          EOF
+
+          cat > "$PUBLISH_DIR/repo.json" <<EOF
+          {
+            "name": "HHKUNGFU",
+            "description": "Kho extension CloudStream cho HHKUNGFU",
+            "manifestVersion": 1,
+            "pluginLists": [
+              "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/builds/plugins.json"
+            ]
+          }
+          EOF
+
+          cat > "$PUBLISH_DIR/README.md" <<EOF
+          # HHKUNGFU CloudStream Repository
+
+          Thêm URL này vào CloudStream Android:
+
+          https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/builds/repo.json
+          EOF
+
+          git -C "$PUBLISH_DIR" config user.name "github-actions[bot]"
+          git -C "$PUBLISH_DIR" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$PUBLISH_DIR" add HHKungfu.cs3 plugins.json repo.json README.md
+          if git -C "$PUBLISH_DIR" diff --cached --quiet; then
+            echo "No changes to publish."
+          else
+            git -C "$PUBLISH_DIR" commit -m "Publish HHKungfu extension"
+            git -C "$PUBLISH_DIR" push origin HEAD:builds
+          fi
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: HHKungfu
-          path: "**/*.cs3"
+          path: HHKungfu/build/HHKungfu.cs3
           if-no-files-found: error
