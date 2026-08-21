@@ -83,7 +83,7 @@ class StreamFreeExtractor : ExtractorApi() {
                 newExtractorLink(
                     source = name,
                     name = "StreamFree ${if (quality != Qualities.Unknown.value) "${quality}p" else "Stream"}",
-                    url = URL(streamUrl),
+                    url = streamUrl,
                     type = type
                 ) {
                     this.referer = pageUrl
