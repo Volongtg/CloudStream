@@ -1,0 +1,25 @@
+[
+    {
+        "url": "https://raw.githubusercontent.com/Volongtg/CloudStream/builds/HHKungfu.cs3",
+        "status": 1,
+        "version": 96,
+        "name": "HHKungfu",
+        "internalName": "HHKungfu",
+        "authors": [
+            "Vo Long"
+        ],
+        "description": "Provider CloudStream cho HHKUNGFU",
+        "fileSize": 25582,
+        "repositoryUrl": "https://github.com/Volongtg/CloudStream",
+        "language": "vi",
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie",
+            "TvSeries",
+            "Movie"
+        ],
+        "iconUrl": "https://hhkungfu.ee/favicon.ico",
+        "apiVersion": 1,
+        "fileHash": "sha256-26ee7c9da2e778d1cc241d0f5d50d46dc931da3df0fca0321670f95ea6d9d43f"
+    }
+]
